@@ -249,6 +249,7 @@ class LocalStorage {
 
   function does_photo_seem_backed_up($photo_id) {
     if ($this->photos_backed_up === false) {
+      $this->dialog->info(1, "Parsing local photo backup");
       $this->photos_backed_up = LocalPhoto::backup_list($this);
     }
 
