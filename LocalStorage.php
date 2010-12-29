@@ -12,6 +12,11 @@ abstract class LocalItem {
     $this->dialog = $dialog;
   }
 
+  protected function assign_data_value($type, $value) {
+    $this->data[$type] = $value;
+    $this->dialog->info(3, "Target $type filename: " . $value);
+  }
+
   function setup_temporary_dir() {
     // FIXME: Not atomic
     $tempname = tempnam($path,$prefix);
@@ -68,7 +73,8 @@ abstract class LocalItem {
 
   function is_backed_up() {
     foreach(array_keys($this->data) as $d) {
-      if (!has_data($type)) {
+      if (!$this->has_data($d)) {
+        $this->dialog->info(3, "Could not find $d file for back up");
         return false;
       }
     }
@@ -124,10 +130,8 @@ class LocalSet extends LocalItem {
     $this->location = $local_storage->relative(self::target_dir);
 
     // Target filenames
-    $this->data['info'] = $set_id . '.xml';
-    $this->dialog->info(3, "Target metadata filename: " . $this->data['info']);
-    $this->data['photos'] = $set_id . '-photos.xml';
-    $this->dialog->info(3, "Target photo filename: " . $this->data['photos']);
+    $this->assign_data_value('info', $set_id . '.xml');
+    $this->assign_data_value('photos', $set_id . '-photos.xml');
   }
 
 }
@@ -147,59 +151,9 @@ class LocalPhoto extends LocalItem {
     $this->dialog->info(3, "Target directory: $this->location");
 
     // Target filenames
-    $this->binary = $photo_info['id'] . '.' . $photo_info['originalformat'];
-    $this->dialog->info(3, "Target binary filename: $this->binary");
-    $this->metadata = $photo_info['id'] . '-info.xml';
-    $this->dialog->info(3, "Target metadata filename: $this->metadata");
-    $this->comments = $photo_info['id'] . '-comments.xml';
-    $this->dialog->info(3, "Target binary filename: $this->comments");
-  }
-
-  function has_binary() {
-    return is_file($this->full_path($this->binary));
-  }
-
-  function has_metadata() {
-    return is_file($this->full_path($this->metadata));
-  }
-
-  function has_comments() {
-    return is_file($this->full_path($this->comments));
-  }
-
-  function is_backed_up() {
-      return $this->has_binary() && $this->has_metadata() && $this->has_comments();
-  }
-
-  function get_binary_filename($temporary = false) {
-    return $this->get_filename($this->binary, $temporary);
-  }
-
-  function get_metadata_filename($temporary = false) {
-    return $this->get_filename($this->metadata, $temporary);
-  }
-
-  function get_comments_filename($temporary = false) {
-    return $this->get_filename($this->comments, $temporary);
-  }
-
-  function save_temporary_files() {
-    if (!is_file($this->get_binary_filename(true)) ||
-        !is_file($this->get_metadata_filename(true)) ||
-        !is_file($this->get_comments_filename(true))) {
-      throw new Exception("Missing some files");
-    }
-
-    $this->create_target_directory();
-
-    if (!rename($this->get_binary_filename(true), $this->get_binary_filename())
-        || !rename($this->get_metadata_filename(true), $this->get_metadata_filename())
-        || !rename($this->get_comments_filename(true), $this->get_comments_filename())) {
-      throw new Exception("Could not move temporary files");
-    }
-
-    $this->dialog->info(2, "Files moved to $this->location");
-
+    $this->assign_data_value('binary', $photo_info['id'] . '.' . $photo_info['originalformat']);
+    $this->assign_data_value('metadata', $photo_info['id'] . '-info.xml');
+    $this->assign_data_value('comments', $photo_info['id'] . '-comments.xml');
   }
 
 }
