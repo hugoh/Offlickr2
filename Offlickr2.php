@@ -197,7 +197,11 @@ class Offlickr2 {
     $this->dialog->info(0, "Found: " . count($this->photo_list) . " photo(s)");
   }
 
-  private function backup_photos() {
+  /**
+   * Backup a series of photo
+   */
+
+  private function backup_photos($retry = true) {
     $total = count($this->photo_list);
     $errors = array();
     if ($total > 0) {
@@ -212,11 +216,20 @@ class Offlickr2 {
       $this->dialog->info(0, "Done with backup");
       if (count($errors) > 0) {
         $this->dialog->error("Could not backup some photos: " . implode(' ', $errors));
+        if ($retry) {
+          $this->dialog->info(0, "Retrying for photos which had errors...");
+          $this->photo_list = $errors;
+          $this->backup_photos(false);
+        }
       }
     } else {
       $this->dialog->info(0, "Nothing to backup");
     }
   }
+
+  /**
+   * Main function: does the backup
+   */
 
   private function go() {
 
@@ -250,6 +263,10 @@ class Offlickr2 {
     }
     $this->backup_photos();
   }
+
+  /**
+   * Main: constructor
+   */
 
   function __construct() {
     $this->dialog = new Dialog($this->debug_level);
