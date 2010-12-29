@@ -23,6 +23,11 @@ class Offlickr2 {
   private $target_directory = false;
   private $backup_all_photos = false;
   private $photo_list = array();
+  private $set_list = array();
+
+  /**
+   * Help
+   */
 
   private function help() {
     $this->dialog->dprint("Offlickr2 $this->version\n\n");
@@ -36,6 +41,10 @@ class Offlickr2 {
                  'doc' => "-$short\t$doc");
   }
 
+  /**
+   * Parse command line arguments
+   */
+
   private function parse_args() {
     $this->optdef =
       array(
@@ -44,6 +53,8 @@ class Offlickr2 {
             $this->define_option('d', ':', 'Target directory'),
             $this->define_option('P', '', 'Backup photos'),
             $this->define_option('p', ':', 'Specific photo to backup'),
+            $this->define_option('S', '', 'Backup sets'),
+            $this->define_option('s', ':', 'Specific set to backup'),
             );
     $short = '';
     foreach ($this->optdef as $opt) {
@@ -74,6 +85,16 @@ class Offlickr2 {
           $this->photo_list = array($options[$opt]);
         }
         break;
+      case 'S':
+        $this->backup_all_sets = true;
+        break;
+      case 's':
+        if(is_array($options[$opt])) {
+          $this->set_list = $options[$opt];
+        } else {
+          $this->set_list = array($options[$opt]);
+        }
+        break;
         
       case 'h':
         $this->help();
@@ -82,12 +103,20 @@ class Offlickr2 {
 
   }
 
+  /**
+   * Validate Flickr rsp rest response
+   */
+
   private function rsp_validate($flickr_xml) {
     $doc = new DOMDocument();
     $doc->loadXML($flickr_xml);
     $rsp = $doc->getElementsByTagName('rsp');
     return ($rsp->item(0)->getAttribute('stat') == 'ok');
   }
+
+  /**
+   * Extract XML document from Flickr rest response
+   */
 
   private function get_rsp_child($flickr_xml) {
     $doc = new DOMDocument();
@@ -107,19 +136,28 @@ class Offlickr2 {
     return $doc->saveXML($e);
   }
 
-  private function get_flickr_xml($method, $photo_id, $filename) {
+  /**
+   * Get XML info from Flickr
+   */
+
+  private function get_flickr_xml($method, $args, $filename) {
     $xml = $this->phpflickr->request($method,
-                                     array("photo_id"=>$photo_id, "format"=>"rest"));
+                                     array_merge($args, array("format"=>"rest")));
     if (!$this->rsp_validate($xml)) {
       $this->dialog->error("Error while getting " . $method);
+      print $xml;
       return false;
     }
     $fp = fopen($filename, "w");
-    $this->dialog->info(2, "Saving " . $method . "  to " . $filename);
+    $this->dialog->info(2, "Saving " . $method . " to " . $filename);
     fwrite($fp, $this->get_rsp_child($xml));
     fclose($fp);
     return true;
   }
+
+  /**
+   * Backup a photo
+   */
 
   private function backup_photo($photo_id) {
     $this->dialog->info(1, "Getting photo info");
@@ -159,13 +197,13 @@ class Offlickr2 {
       fclose($fp);
 
       // Metadata
-      if (! $this->get_flickr_xml("flickr.photos.getInfo", $photo_id,
+      if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
                                   $local_photo->get_metadata_filename(true))) {
         return false;
       }
 
       // Comments
-      if (! $this->get_flickr_xml("flickr.photos.comments.getList", $photo_id,
+      if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
                                   $local_photo->get_comments_filename(true))) {
         return false;
       }
@@ -176,6 +214,51 @@ class Offlickr2 {
     }
 
   }
+
+  /**
+   * Backup a set
+   */
+
+  private function backup_set($set_id) {
+    $this->dialog->info(1, "Processing set $set_id");
+
+    $local_set = $this->local_storage->local_set_factory($set_id);
+    $local_set->setup_temporary_dir();
+
+    // Metadata
+    if (! $this->get_flickr_xml("flickr.photosets.getInfo", array("photoset_id"=>$set_id),
+                                $local_set->get_data_filename('info', true))) {
+      return false;
+    }
+
+    // Photo list
+    // FIXME: there could be more than one page
+    if (! $this->get_flickr_xml("flickr.photosets.getPhotos", array("photoset_id"=>$set_id),
+                                $local_set->get_data_filename('photos', true))) {
+      return false;
+    }
+
+    // Move to the right place
+    $local_set->save_temporary_files();
+    return true;
+  }
+
+  /**
+   * Get set list
+   */
+
+  private function get_set_list() {
+    $this->dialog->info(0, "Getting set list");
+    $sets = $this->phpflickr->photosets_getList();
+    foreach ($sets['photoset'] as $set) {
+      array_push($this->set_list, $set['id']);
+    }
+    $this->dialog->info(0, "Found: " . count($this->set_list) . " set(s)");
+  }
+
+  /**
+   * Get photo list
+   */
 
   private function get_photo_list() {
     $this->dialog->info(0, "Getting photo list");
@@ -201,29 +284,44 @@ class Offlickr2 {
    * Backup a series of photo
    */
 
-  private function backup_photos($retry = true) {
-    $total = count($this->photo_list);
+  private function backup_photos() {
+    return $this->backup_items($this->photo_list, "photo", "backup_photo");
+  }
+
+  /**
+   * Backup a series of sets
+   */
+
+  private function backup_sets() {
+    return $this->backup_items($this->set_list, "set", "backup_set");
+  }
+
+  /**
+   * Backup a series of items
+   */
+
+  private function backup_items($list, $what, $backup_function, $retry = true) {
+    $total = count($list);
     $errors = array();
     if ($total > 0) {
       $i = 1;
-      foreach ($this->photo_list as $photo_id) {
-        $this->dialog->info(0, "Backing up photo $photo_id [$i/$total]");
-        if (!$this->backup_photo($photo_id)) {
-          array_push($errors, $photo_id);
+      foreach ($list as $id) {
+        $this->dialog->info(0, "Backing up $what $id [$i/$total]");
+        if (!$this->{$backup_function}($id)) {
+          array_push($errors, $id);
         }
         $i++;
       }
       $this->dialog->info(0, "Done with backup");
       if (count($errors) > 0) {
-        $this->dialog->error("Could not backup some photos: " . implode(' ', $errors));
+        $this->dialog->error("Could not backup some $what(s): " . implode(' ', $errors));
         if ($retry) {
-          $this->dialog->info(0, "Retrying for photos which had errors...");
-          $this->photo_list = $errors;
-          $this->backup_photos(false);
+          $this->dialog->info(0, "Retrying for $what(s) which had errors...");
+          $this->backup_items($errors, $what, $backup_function, false);
         }
       }
     } else {
-      $this->dialog->info(0, "Nothing to backup");
+      $this->dialog->info(0, "No $what to backup");
     }
   }
 
@@ -262,6 +360,10 @@ class Offlickr2 {
       $this->get_photo_list();
     }
     $this->backup_photos();
+    if ($this->backup_all_sets) {
+      $this->get_set_list();
+    }
+    $this->backup_sets();
   }
 
   /**
