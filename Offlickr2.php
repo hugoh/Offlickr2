@@ -22,6 +22,7 @@ class Offlickr2 {
   private $flickr_id = false;
   private $target_directory = false;
   private $backup_all_photos = false;
+  private $local_checks = false;
   private $photo_list = array();
   private $set_list = array();
 
@@ -55,6 +56,7 @@ class Offlickr2 {
             $this->define_option('p', ':', 'Specific photo to backup'),
             $this->define_option('S', '', 'Backup sets'),
             $this->define_option('s', ':', 'Specific set to backup'),
+            $this->define_option('q', '', 'Quick (local) check to evaluate state'),
             $this->define_option('v', ':', "Verbosity level; default: $this->debug_level"),
             );
     $short = '';
@@ -72,6 +74,9 @@ class Offlickr2 {
       switch ($opt) {
       case 'v':
         $this->debug_level = $options[$opt];
+        break;
+      case 'q':
+        $this->local_checks = true;
         break;
       case 'i':
         $this->flickr_id = $options[$opt];
@@ -164,58 +169,78 @@ class Offlickr2 {
    */
 
   private function backup_photo($photo_id) {
-    $this->dialog->info(1, "Getting photo info");
-    $photo_info = $this->phpflickr->photos_getInfo($photo_id);
+    // Check if photo is already backed up
+    $local_photo = false;
+    $already_backed_up = false;
+    if (!$this->local_checks) {
+      $this->dialog->info(1, "Getting photo info");
+      $photo_info = $this->phpflickr->photos_getInfo($photo_id);
 
-    // Check if we've already backed it up
-    $local_photo = $this->local_storage->local_photo_factory($photo_info);
-    if ($local_photo->is_backed_up()) {
-      $this->dialog->info(1, "Photo $photo_id already backed up");
+      $local_photo = $this->local_storage->local_photo_factory($photo_info);
+      if ($local_photo->is_backed_up()) {
+        $already_backed_up = true;
+      }
     } else {
-      $this->dialog->info(1, "Processing photo $photo_id");
-
-      $local_photo->setup_temporary_dir();
-
-      // Binary
-      $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
-      $source_url = false;
-      foreach($photo_size as $size) {
-        if ($size['label'] == "Original") {
-          $source_url =  $size['source'];
-          break;
-        }
+      if ($this->local_storage->does_photo_seem_backed_up($photo_id)) {
+        $already_backed_up = true;
       }
-      if ($source_url == false) {
-        $this->dialog->error("Could not find source URL");
-        return false;
-      }
-      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename('binary', true));
-      $this->dialog->info(2, "Binary source is " . $source_url);
-      $fp = fopen($local_photo->get_data_filename('binary', true), "w");
-      curl_setopt($this->curl, CURLOPT_URL, $source_url);
-      curl_setopt($this->curl, CURLOPT_FILE, $fp);
-      if (!curl_exec($this->curl)) {
-        $this->dialog->error("Could not download binary");
-        return false;
-      }
-      fclose($fp);
+    }
 
-      // Metadata
-      if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename('metadata', true))) {
-        return false;
-      }
-
-      // Comments
-      if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename('comments', true))) {
-        return false;
-      }
-
-      // Move to the right place
-      $local_photo->save_temporary_files();
+    if ($already_backed_up) {
+      $this->dialog->info(0, "Photo $photo_id already backed up");
       return true;
     }
+
+    // If we got here, then we do need to back the photo up
+    $this->dialog->info(1, "Processing photo $photo_id");
+
+    if ($local_photo == false) {
+      $this->dialog->info(1, "Getting photo info");
+      $photo_info = $this->phpflickr->photos_getInfo($photo_id);
+      $local_photo = $this->local_storage->local_photo_factory($photo_info);
+    }
+
+    $local_photo->setup_temporary_dir();
+
+    // Binary
+    $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
+    $source_url = false;
+    foreach($photo_size as $size) {
+      if ($size['label'] == "Original") {
+        $source_url =  $size['source'];
+        break;
+      }
+    }
+    if ($source_url == false) {
+      $this->dialog->error("Could not find source URL");
+      return false;
+    }
+    $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename('binary', true));
+    $this->dialog->info(2, "Binary source is " . $source_url);
+    $fp = fopen($local_photo->get_data_filename('binary', true), "w");
+    curl_setopt($this->curl, CURLOPT_URL, $source_url);
+    curl_setopt($this->curl, CURLOPT_FILE, $fp);
+    if (!curl_exec($this->curl)) {
+      $this->dialog->error("Could not download binary");
+      return false;
+    }
+    fclose($fp);
+
+    // Metadata
+    if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
+                                $local_photo->get_data_filename('metadata', true))) {
+      return false;
+    }
+
+    // Comments
+    if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
+                                $local_photo->get_data_filename('comments', true))) {
+      return false;
+    }
+
+    // Move to the right place
+    $local_photo->save_temporary_files();
+    return true;
 
   }
 

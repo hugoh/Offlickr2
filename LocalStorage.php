@@ -138,6 +138,14 @@ class LocalSet extends LocalItem {
 
 class LocalPhoto extends LocalItem {
 
+  const metadata_suffix = '-info.xml';
+  const comments_suffix = '-comments.xml';
+
+  const BINARY_FLAG = 1;
+  const METADATA_FLAG = 2;
+  const COMMENTS_FLAG = 4;
+  const ALL_FLAGS = 7;
+
   function __construct($photo_info, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
 
@@ -152,13 +160,58 @@ class LocalPhoto extends LocalItem {
 
     // Target filenames
     $this->assign_data_value('binary', $photo_info['id'] . '.' . $photo_info['originalformat']);
-    $this->assign_data_value('metadata', $photo_info['id'] . '-info.xml');
-    $this->assign_data_value('comments', $photo_info['id'] . '-comments.xml');
+    $this->assign_data_value('metadata', $photo_info['id'] . self::metadata_suffix);
+    $this->assign_data_value('comments', $photo_info['id'] . self::comments_suffix);
+  }
+
+  static function check_backup_dir($dir, &$present, $depth = 1) {
+    // This assumes that the backup directory is in the right format
+
+    if (is_dir($dir)) {
+      $objects = scandir($dir); 
+      foreach ($objects as $object) { 
+        if ($object != "." && $object != ".." && ($depth > 1 || $object != LocalSet::target_dir)) { 
+          if (filetype($dir."/".$object) == "dir") {
+            LocalPhoto::check_backup_dir($dir."/".$object, $present, $depth + 1);
+          } else {
+            // Check for binary
+            if (preg_match('/^(\d+)\./', $object, $matches)) {
+              $present[(string)$matches[1]] |= self::BINARY_FLAG;
+              next;
+            }
+            // Check for metadata
+            if (preg_match('/^(\d+)' . self::metadata_suffix . '/', $object, $matches)) {
+              $present[(string)$matches[1]] |= self::METADATA_FLAG;
+              next;
+            }
+            // Check for comments
+            if (preg_match('/^(\d+)' . self::comments_suffix . '/', $object, $matches)) {
+              $present[(string)$matches[1]] |= self::COMMENTS_FLAG;
+              next;
+            }
+          }
+        } 
+      } 
+    } 
+
+    return $present;
+  }
+
+  static function backup_list($local_storage) {
+    $present = array();
+    LocalPhoto::check_backup_dir($local_storage->directory, $present);
+    return $present;
+  }
+
+  static function does_photo_seem_backed_up($present, $photo_id) {
+    return $present[$photo_id] == self::ALL_FLAGS;
   }
 
 }
 
 class LocalStorage {
+
+  private $photos_backed_up = false;
 
   function __construct($dir, $debug_level) {
     $this->dialog = new Dialog($debug_level);
@@ -192,6 +245,14 @@ class LocalStorage {
 
   function relative($path) {
     return $this->directory . '/' . $path;
+  }
+
+  function does_photo_seem_backed_up($photo_id) {
+    if ($this->photos_backed_up === false) {
+      $this->photos_backed_up = LocalPhoto::backup_list($this);
+    }
+
+    return LocalPhoto::does_photo_seem_backed_up($this->photos_backed_up, $photo_id);
   }
 
 }
