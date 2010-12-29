@@ -55,6 +55,7 @@ class Offlickr2 {
             $this->define_option('p', ':', 'Specific photo to backup'),
             $this->define_option('S', '', 'Backup sets'),
             $this->define_option('s', ':', 'Specific set to backup'),
+            $this->define_option('v', ':', "Verbosity level; default: $this->debug_level"),
             );
     $short = '';
     foreach ($this->optdef as $opt) {
@@ -69,6 +70,9 @@ class Offlickr2 {
 
     foreach (array_keys($options) as $opt)
       switch ($opt) {
+      case 'v':
+        $this->debug_level = $options[$opt];
+        break;
       case 'i':
         $this->flickr_id = $options[$opt];
         break;
@@ -185,9 +189,9 @@ class Offlickr2 {
         $this->dialog->error("Could not find source URL");
         return false;
       }
-      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_binary_filename(true));
+      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename('binary', true));
       $this->dialog->info(2, "Binary source is " . $source_url);
-      $fp = fopen($local_photo->get_binary_filename(true), "w");
+      $fp = fopen($local_photo->get_data_filename('binary', true), "w");
       curl_setopt($this->curl, CURLOPT_URL, $source_url);
       curl_setopt($this->curl, CURLOPT_FILE, $fp);
       if (!curl_exec($this->curl)) {
@@ -198,13 +202,13 @@ class Offlickr2 {
 
       // Metadata
       if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
-                                  $local_photo->get_metadata_filename(true))) {
+                                  $local_photo->get_data_filename('metadata', true))) {
         return false;
       }
 
       // Comments
       if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
-                                  $local_photo->get_comments_filename(true))) {
+                                  $local_photo->get_data_filename('comments', true))) {
         return false;
       }
 
