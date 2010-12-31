@@ -364,6 +364,35 @@ class Offlickr2 {
   }
 
   /**
+   * Flickr authorization
+   */
+
+  private function authorize() {
+    $this->dialog->info(0, "\nYou need to authorize Offlickr2 to access your Flickr account");
+    $this->dialog->info(1, "Getting a frob");
+    $get_frob = $this->phpflickr->clean_text_nodes(unserialize($this->phpflickr->request("flickr.auth.getFrob", array())));
+    $frob = $get_frob['frob'];
+    $perms = 'read';
+    $api_sig = md5($this->secret . "api_key" . $this->appid . "frob" . $frob . "perms" . $perms);
+    $url = sprintf('http://flickr.com/services/auth/?api_key=%s&perms=%s&frob=%s&api_sig=%s',
+                   $this->appid, $perms, $frob, $api_sig);
+    $this->dialog->info(0, "Visit the following URL:\n\n$url\n\nPress enter when finished");
+    $sh = fopen("php://stdin","r");
+    fgets($sh);
+    $this->dialog->info(1, "Getting the token");
+    $token = $this->phpflickr->auth_getToken($frob);
+    $this->dialog->info(1, "Writing the token to $this->configuration_file");
+    $ah = fopen($this->configuration_file, "a");
+    if ($ah === FALSE) {
+      $this->dialog->error("Cannot write to configuration file");
+      exit(1);
+    }
+    fputs($ah, sprintf("\n[%s]\ntoken = %s\n", $token['user']['nsid'], $token['token']));
+    fclose($ah);
+    return $token['token'];
+  }
+
+  /**
    * Main function: does the backup
    */
 
@@ -387,10 +416,11 @@ class Offlickr2 {
     // Create phpFlickr object
     $ini_array = parse_ini_file($this->configuration_file, true);
     if (!is_array($ini_array) || !is_array($ini_array[$this->flickr_id])) {
-        $this->dialog->error("No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
-        exit(1); 
-      }
-    $token = $ini_array[$this->flickr_id]['token'];
+        $this->dialog->info(1, "No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
+        $token = $this->authorize();
+    } else {
+      $token = $ini_array[$this->flickr_id]['token'];
+    }
     if (!$token) {
       $this->error("No token for Flickr id $this->flickr_id in configuration file $this->configuration_file");
         exit(1); 
