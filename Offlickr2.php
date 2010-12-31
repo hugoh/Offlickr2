@@ -14,12 +14,13 @@ class Offlickr2 {
   // Private variables
   private $appid = 'c538ec60d29c939f35461ef134d6d579';
   private $secret = '84c560c121f79fdd';
-  private $configuration_file = 'sample.ini';
+  private $configuration_file = 'auth.ini';
   private $optdef = array();
 
   // Settings
   private $debug_level = 2;
   private $flickr_id = false;
+  private $flickr_username = false;
   private $target_directory = false;
   private $backup_all_photos = false;
   private $local_checks = false;
@@ -50,7 +51,9 @@ class Offlickr2 {
     $this->optdef =
       array(
             $this->define_option('h', '', 'Display this message'),
+            $this->define_option('c', ':', 'Configuration file'),
             $this->define_option('i', ':', 'Flickr ID'),
+            $this->define_option('I', ':', 'Flickr username'),            
             $this->define_option('d', ':', 'Target directory'),
             $this->define_option('P', '', 'Backup photos'),
             $this->define_option('p', ':', 'Specific photo to backup'),
@@ -75,11 +78,17 @@ class Offlickr2 {
       case 'v':
         $this->debug_level = $options[$opt];
         break;
+      case 'c':
+        $this->configuration_file = $options[$opt];
+        break;
       case 'q':
         $this->local_checks = true;
         break;
       case 'i':
         $this->flickr_id = $options[$opt];
+        break;
+      case 'I':
+        $this->flickr_username = $options[$opt];
         break;
       case 'd':
         $this->target_directory = $options[$opt];
@@ -360,21 +369,25 @@ class Offlickr2 {
 
   private function go() {
 
+    $this->phpflickr = new phpFlickr($this->appid, $this->secret, true);
+
+    // Check for Flickr username
+    if ($this->flickr_username != false) { 
+      $this->dialog->info(1, "Looking for Flickr id for username $this->flickr_username");
+      $r = $this->phpflickr->people_findByUsername($this->flickr_username);
+      $this->flickr_id = $r['nsid'];
+    }    
+
     // Check for Flickr ID
     if (!$this->flickr_id) { 
-      $this->error("Missing Flickr ID");
+      $this->dialog->error("Missing Flickr ID");
       exit(1); 
     }
 
     // Create phpFlickr object
-    $this->phpflickr = new phpFlickr($this->appid, $this->secret, true);
     $ini_array = parse_ini_file($this->configuration_file, true);
-    if (!is_array($ini_array)) { 
-      $this->error("Could not parse configuration file $this->configuration_file");
-      exit(1); 
-    }
-    if (!is_array($ini_array[$this->flickr_id])) {
-        $this->error("No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
+    if (!is_array($ini_array) || !is_array($ini_array[$this->flickr_id])) {
+        $this->dialog->error("No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
         exit(1); 
       }
     $token = $ini_array[$this->flickr_id]['token'];
