@@ -1,24 +1,28 @@
 <?php
 
 require_once('./phpflickr/phpFlickr.php');
-require_once('Dialog.php');
-require_once('LocalStorage.php');
+require_once('./Dialog.php');
+require_once('./LocalStorage.php');
+require_once('./version.php');
 
+define('FLICKR_APPID', 'c538ec60d29c939f35461ef134d6d579');
+define('FLICKR_SECRET', '84c560c121f79fdd');
 define("FLICKR_MAX_PER_PAGE", 500);
+define('DEFAULT_AUTH_FILE', getenv("HOME") . '/.offlickr2.auth.ini');
 
 class Offlickr2 {
 
   // Version
-  private $version = '0.0 -- 2010-12-27';
+  private $version = OFFLICKR2_VERSION;
 
   // Private variables
-  private $appid = 'c538ec60d29c939f35461ef134d6d579';
-  private $secret = '84c560c121f79fdd';
-  private $configuration_file = 'auth.ini';
+  private $appid = FLICKR_APPID;
+  private $secret = FLICKR_SECRET;
+  private $configuration_file = DEFAULT_AUTH_FILE;
   private $optdef = array();
 
   // Settings
-  private $debug_level = 2;
+  private $debug_level = 0;
   private $flickr_id = false;
   private $flickr_username = false;
   private $target_directory = false;
@@ -51,7 +55,7 @@ class Offlickr2 {
     $this->optdef =
       array(
             $this->define_option('h', '', 'Display this message'),
-            $this->define_option('c', ':', 'Configuration file'),
+            $this->define_option('c', ':', 'Configuration file (default: '.$this->configuration_file.')'),
             $this->define_option('i', ':', 'Flickr ID'),
             $this->define_option('I', ':', 'Flickr username'),            
             $this->define_option('d', ':', 'Target directory'),

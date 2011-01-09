@@ -223,7 +223,7 @@ class LocalStorage {
     $this->dialog->info(2, "Checking for local directory $dir");
     if (! is_dir($this->directory)) {
       $this->dialog->info(1, "Creating $dir");
-      mkdir($dir);
+      mkdir($dir, $mode = 0755, $recursive = true);
     }
   }
 
