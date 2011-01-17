@@ -5,6 +5,10 @@ class Dialog {
   private $debug_level = 2;
 
   function __construct($level = 0) {
+    $this->set_debug_level($level);
+  }
+
+  function set_debug_level($level) {
     $this->debug_level = $level;
   }
 

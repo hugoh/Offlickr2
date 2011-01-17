@@ -49,7 +49,6 @@ abstract class LocalItem {
     return $dir . '/' . $filename;
   }
 
-
   function has_data($type) {
     return is_file($this->full_path($this->data[$type]));
   }
@@ -82,17 +81,16 @@ abstract class LocalItem {
   }
 
   function save_temporary_files() {
-    foreach(array_keys($this->data) as $d) {
-      if (!is_file($this->get_data_filename($d, true))) {
-        throw new Exception("Missing temporary files ($d): " . $this->get_data_filename($d, true));
-      }
-    }
-
     $this->create_target_directory();
 
     foreach(array_keys($this->data) as $d) {
+      if (!is_file($this->get_data_filename($d, true))) {
+        continue;
+      }
       if (!rename($this->get_data_filename($d, true), $this->get_data_filename($d))) {
         throw new Exception("Could not move temporary files");
+      } else {
+        $this->dialog->info(3, "Moving $d to " . $this->get_data_filename($d));
       }
     }
 

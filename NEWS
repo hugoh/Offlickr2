@@ -1,0 +1,5 @@
+1.1
+- Added option to force selective backup of binary, metadata and comments
+
+1.0
+- Initial release
