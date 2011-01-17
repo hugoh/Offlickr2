@@ -1,4 +1,3 @@
-- Force redownload of metadata, comments, binary
 - Allow multiple backup directory structures
 - Collection backups
 - Backup sets with more than 500 photos
