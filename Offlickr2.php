@@ -185,7 +185,7 @@ class Offlickr2 {
                                      array_merge($args, array("format"=>"rest")));
     if (!$this->rsp_validate($xml)) {
       $this->dialog->error("Error while getting " . $method);
-      print $xml;
+      $this->dialog->dump_var(0, "Flickr response", $xml);
       return false;
     }
     $fp = fopen($filename, "w");
@@ -253,6 +253,7 @@ class Offlickr2 {
       }
       if ($source_url == false) {
         $this->dialog->error("Could not find source URL");
+        $this->dialog->dump_var(4, "Flickr response", $this->phpflickr->parsed_response);
         return false;
       }
       $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename('binary', true));

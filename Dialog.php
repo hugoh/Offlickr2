@@ -33,6 +33,13 @@ class Dialog {
     $this->dialog(0, 'ERROR: ' . $string . "\n");
   }
 
+  function dump_var($debug, $name, $var) {
+    if ($this->debug_level >= $debug) {
+      print('DEBUG: ' . $name . ': ');
+      print_r($var);
+    }
+  }
+
 }
 
 ?>
