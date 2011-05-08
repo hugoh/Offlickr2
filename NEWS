@@ -4,6 +4,7 @@
 - Complete back up of sets with more than 500 photos
 - Added download progress information for debug levels >= 2
 - Added additional debugging output
+- Updated to phpFlickr 3.1
 
 1.0
 - Initial release

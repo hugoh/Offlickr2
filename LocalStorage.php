@@ -142,9 +142,9 @@ class LocalSet extends LocalItem {
   }
 
   function save_temporary_files($total_pages) {
+    parent::save_temporary_files();
     for($page = 1; $page <= $total_pages; $page++) {
       $this->move_file("photo page $page", $this->get_photoset_photos_filename($page, true), $this->get_photoset_photos_filename($page));
-      parent::save_temporary_files();
     }
   }
 
@@ -163,7 +163,7 @@ class LocalPhoto extends LocalItem {
   function __construct($photo_info, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
 
-    $this->photo_info = $photo_info;
+    $this->photo_info = $photo_info['photo'];
 
     // Target directory
     $year = substr($this->photo_info['dates']['taken'], 0, 4);
@@ -173,9 +173,9 @@ class LocalPhoto extends LocalItem {
     $this->dialog->info(3, "Target directory: $this->location");
 
     // Target filenames
-    $this->assign_data_value('binary', $photo_info['id'] . '.' . $photo_info['originalformat']);
-    $this->assign_data_value('metadata', $photo_info['id'] . self::metadata_suffix);
-    $this->assign_data_value('comments', $photo_info['id'] . self::comments_suffix);
+    $this->assign_data_value('binary', $this->photo_info['id'] . '.' . $this->photo_info['originalformat']);
+    $this->assign_data_value('metadata', $this->photo_info['id'] . self::metadata_suffix);
+    $this->assign_data_value('comments', $this->photo_info['id'] . self::comments_suffix);
   }
 
   static function check_backup_dir($dir, &$present, $dialog, &$files = 0, $depth = 1) {
