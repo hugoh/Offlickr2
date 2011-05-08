@@ -149,7 +149,9 @@ class Offlickr2 {
 
   private function rsp_validate($flickr_xml) {
     $doc = new DOMDocument();
-    $doc->loadXML($flickr_xml);
+    if ($doc->loadXML($flickr_xml) == FALSE) {
+      return false;
+    }
     $rsp = $doc->getElementsByTagName('rsp');
     return ($rsp->item(0)->getAttribute('stat') == 'ok');
   }
