@@ -316,14 +316,20 @@ class Offlickr2 {
     }
 
     // Photo list
-    // FIXME: there could be more than one page
-    if (! $this->get_flickr_xml("flickr.photosets.getPhotos", array("photoset_id"=>$set_id),
-                                $local_set->get_data_filename('photos', true))) {
-      return false;
+    $ps = $this->phpflickr->photosets_getPhotos($set_id);
+    $total_pages = $ps['photoset']['pages'];
+    for($page = 1; $page <= $total_pages; $page++) {
+      $this->dialog->info(3, "Set $set_id - page $page");
+      if (! $this->get_flickr_xml("flickr.photosets.getPhotos",
+                                  array("photoset_id"=>$set_id, "page" => $page),
+                                  $local_set->get_photoset_photos_filename($page, true))) {
+        return false;
+      }
+      
     }
 
     // Move to the right place
-    $local_set->save_temporary_files();
+    $local_set->save_temporary_files($total_pages);
     return true;
   }
 

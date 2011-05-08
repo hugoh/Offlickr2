@@ -37,7 +37,7 @@ abstract class LocalItem {
     }
   }
 
-  private function get_filename($filename, $temporary) {
+  protected function get_filename($filename, $temporary) {
     if ($temporary == true) {
       if ($this->temporary_dir == false) {
         throw new Exception("Temporary directory not setup");
@@ -80,6 +80,14 @@ abstract class LocalItem {
     return true;
   }
 
+  protected function move_file($label, $old, $new) {
+    if (!rename($old, $new)) {
+      throw new Exception("Could not move temporary files for $label");
+    } else {
+      $this->dialog->info(3, "Moving $label to " . $new);
+    }
+  }
+
   function save_temporary_files() {
     $this->create_target_directory();
 
@@ -87,11 +95,7 @@ abstract class LocalItem {
       if (!is_file($this->get_data_filename($d, true))) {
         continue;
       }
-      if (!rename($this->get_data_filename($d, true), $this->get_data_filename($d))) {
-        throw new Exception("Could not move temporary files");
-      } else {
-        $this->dialog->info(3, "Moving $d to " . $this->get_data_filename($d));
-      }
+      $this->move_file($d, $this->get_data_filename($d, true), $this->get_data_filename($d));
     }
 
     $this->dialog->info(2, "Files moved to $this->location");
@@ -127,9 +131,21 @@ class LocalSet extends LocalItem {
     parent::__construct($local_storage, $dialog);
     $this->location = $local_storage->relative(self::target_dir);
 
+    $this->set_id = $set_id;
+
     // Target filenames
     $this->assign_data_value('info', $set_id . '.xml');
-    $this->assign_data_value('photos', $set_id . '-photos.xml');
+  }
+
+  function get_photoset_photos_filename($page, $temporary = false) {
+    return $this->get_filename($this->set_id . '-photos-' . $page . '.xml', $temporary);
+  }
+
+  function save_temporary_files($total_pages) {
+    for($page = 1; $page <= $total_pages; $page++) {
+      $this->move_file("photo page $page", $this->get_photoset_photos_filename($page, true), $this->get_photoset_photos_filename($page));
+      parent::save_temporary_files();
+    }
   }
 
 }
