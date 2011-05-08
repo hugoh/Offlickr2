@@ -1,5 +1,7 @@
 1.1
+- Fixed download for non-pro accounts - https://github.com/hugoh/Offlickr2/issues/2
 - Added option to force selective backup of binary, metadata and comments
+- Added additional debugging output
 
 1.0
 - Initial release

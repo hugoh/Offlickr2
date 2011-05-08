@@ -245,10 +245,16 @@ class Offlickr2 {
     if ($this->force_backup & LocalPhoto::BINARY_FLAG || ! $local_photo->has_data('binary')) {
       $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
       $source_url = false;
-      foreach($photo_size as $size) {
-        if ($size['label'] == "Original") {
+      $max_size = 0;
+      foreach(array_reverse($photo_size) as $size) {
+        if ($size['label'] = 'Original') {
           $source_url =  $size['source'];
           break;
+        }
+        $ps = $size['height'] * $size['width'];
+        if ($max_size < $ps) {
+          $source_url =  $size['source'];
+          $max_size = $ps;
         }
       }
       if ($source_url == false) {
