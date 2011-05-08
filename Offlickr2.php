@@ -267,6 +267,9 @@ class Offlickr2 {
       $fp = fopen($local_photo->get_data_filename('binary', true), "w");
       curl_setopt($this->curl, CURLOPT_URL, $source_url);
       curl_setopt($this->curl, CURLOPT_FILE, $fp);
+      if ($this->dialog->show_progress()) {
+        curl_setopt($this->curl, CURLOPT_NOPROGRESS, false);
+      }
       if (!curl_exec($this->curl)) {
         $this->dialog->error("Could not download binary");
         return false;

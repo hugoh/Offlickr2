@@ -162,7 +162,7 @@ class LocalPhoto extends LocalItem {
     $this->assign_data_value('comments', $photo_info['id'] . self::comments_suffix);
   }
 
-  static function check_backup_dir($dir, &$present, $depth = 1) {
+  static function check_backup_dir($dir, &$present, $dialog, &$files = 0, $depth = 1) {
     // This assumes that the backup directory is in the right format
 
     if (is_dir($dir)) {
@@ -170,26 +170,33 @@ class LocalPhoto extends LocalItem {
       foreach ($objects as $object) { 
         if ($object != "." && $object != ".." && ($depth > 1 || $object != LocalSet::target_dir)) { 
           if (filetype($dir."/".$object) == "dir") {
-            LocalPhoto::check_backup_dir($dir."/".$object, $present, $depth + 1);
+            LocalPhoto::check_backup_dir($dir."/".$object, $present, $dialog, $files, $depth + 1);
           } else {
             // Check for binary
             if (preg_match('/^(\d+)\./', $object, $matches)) {
+              $dialog->progress(++$files);
               $present[(string)$matches[1]] |= self::BINARY_FLAG;
               next;
             }
             // Check for metadata
             if (preg_match('/^(\d+)' . self::metadata_suffix . '/', $object, $matches)) {
+              $dialog->progress(++$files);
               $present[(string)$matches[1]] |= self::METADATA_FLAG;
               next;
             }
             // Check for comments
             if (preg_match('/^(\d+)' . self::comments_suffix . '/', $object, $matches)) {
+              $dialog->progress(++$files);
               $present[(string)$matches[1]] |= self::COMMENTS_FLAG;
               next;
             }
           }
         } 
       } 
+
+      if ($depth == 1) {
+        $dialog->progress_done(' files scanned');
+      }
     } 
 
     return $present;
@@ -197,7 +204,7 @@ class LocalPhoto extends LocalItem {
 
   static function backup_list($local_storage) {
     $present = array();
-    LocalPhoto::check_backup_dir($local_storage->directory, $present);
+    LocalPhoto::check_backup_dir($local_storage->directory, $present, $local_storage->dialog);
     return $present;
   }
 

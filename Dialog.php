@@ -3,6 +3,7 @@
 class Dialog {
 
   private $debug_level = 2;
+  const DIALOG_SHOW_PROGRESS_LEVEL = 2;
 
   function __construct($level = 0) {
     $this->set_debug_level($level);
@@ -10,6 +11,22 @@ class Dialog {
 
   function set_debug_level($level) {
     $this->debug_level = $level;
+  }
+
+  function show_progress() {
+    return self::DIALOG_SHOW_PROGRESS_LEVEL <= $this->debug_level;
+  }
+
+  function progress($string) {
+    if ($this->show_progress()) {
+      print("\r" . $string);
+    }
+  }
+
+  function progress_done($string = '') {
+    if ($this->show_progress()) {
+      print($string . " ... done\n");
+    }
   }
 
   private function dialog($debug, $string) {
