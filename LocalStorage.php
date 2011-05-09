@@ -172,8 +172,16 @@ class LocalPhoto extends LocalItem {
     $this->location = $local_storage->relative($year . '/' . $month . '/' . $day);
     $this->dialog->info(3, "Target directory: $this->location");
 
+    // Photo format
+    if (array_key_exists('originalformat', $this->photo_info)) {
+      $extension = $this->photo_info['originalformat'];
+    } else {
+      // FIXME: assume it's JPEG; a better way to do this is to call flickr.photos.getInfo and look it up
+      $extension = 'jpg';
+    }
+
     // Target filenames
-    $this->assign_data_value('binary', $this->photo_info['id'] . '.' . $this->photo_info['originalformat']);
+    $this->assign_data_value('binary', $this->photo_info['id'] . '.' . $extension);
     $this->assign_data_value('metadata', $this->photo_info['id'] . self::metadata_suffix);
     $this->assign_data_value('comments', $this->photo_info['id'] . self::comments_suffix);
   }

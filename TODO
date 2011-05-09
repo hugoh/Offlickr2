@@ -1,3 +1,4 @@
 - Allow multiple backup directory structures
 - Collection backups
 - Script to release a tar'ed version of the software
+- Better figure out image extension for non-pro accounts
