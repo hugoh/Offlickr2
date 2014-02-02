@@ -126,6 +126,7 @@ abstract class LocalItem {
 class LocalSet extends LocalItem {
 
   const target_dir = "sets";
+  private $total_pages = 0;
 
   function __construct($set_id, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
@@ -137,13 +138,17 @@ class LocalSet extends LocalItem {
     $this->assign_data_value('info', $set_id . '.xml');
   }
 
+  function set_pages($pages) {
+    $this->total_pages = $pages;
+  }
+
   function get_photoset_photos_filename($page, $temporary = false) {
     return $this->get_filename($this->set_id . '-photos-' . $page . '.xml', $temporary);
   }
 
-  function save_temporary_files($total_pages) {
+  function save_temporary_files() {
     parent::save_temporary_files();
-    for($page = 1; $page <= $total_pages; $page++) {
+    for($page = 1; $page <= $this->total_pages; $page++) {
       $this->move_file("photo page $page", $this->get_photoset_photos_filename($page, true), $this->get_photoset_photos_filename($page));
     }
   }

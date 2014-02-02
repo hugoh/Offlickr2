@@ -320,6 +320,7 @@ class Offlickr2 {
     // Photo list
     $ps = $this->phpflickr->photosets_getPhotos($set_id);
     $total_pages = $ps['photoset']['pages'];
+    $local_set->set_pages($total_pages);
     for($page = 1; $page <= $total_pages; $page++) {
       $this->dialog->info(3, "Set $set_id - page $page");
       if (! $this->get_flickr_xml("flickr.photosets.getPhotos",
@@ -331,7 +332,7 @@ class Offlickr2 {
     }
 
     // Move to the right place
-    $local_set->save_temporary_files($total_pages);
+    $local_set->save_temporary_files();
     return true;
   }
 
