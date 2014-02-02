@@ -126,7 +126,7 @@ abstract class LocalItem {
 class LocalSet extends LocalItem {
 
   const target_dir = "sets";
-  private $total_pages = 0;
+  protected $total_pages = 0;
 
   function __construct($set_id, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
