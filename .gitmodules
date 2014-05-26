@@ -1,0 +1,3 @@
+[submodule "phpflickr"]
+	path = phpflickr
+	url = git@github.com:dan-coulter/phpflickr.git
