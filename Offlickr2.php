@@ -1,6 +1,6 @@
 <?php
 
-require_once('./phpFlickr-3.1/phpFlickr.php');
+require_once('./phpflickr/phpFlickr.php');
 require_once('./Dialog.php');
 require_once('./LocalStorage.php');
 require_once('./version.php');
