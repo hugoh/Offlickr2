@@ -125,6 +125,8 @@ abstract class LocalItem {
 
 class LocalSet extends LocalItem {
 
+  const suffix = '.xml';
+
   const target_dir = "sets";
   protected $total_pages = 0;
 
@@ -137,7 +139,7 @@ class LocalSet extends LocalItem {
     $this->set_id = $set_id;
 
     // Target filenames
-    $this->assign_data_value('info', $set_id . '.xml');
+    $this->assign_data_value(self::INFO, $set_id . self::suffix);
   }
 
   function set_pages($pages) {
@@ -145,7 +147,7 @@ class LocalSet extends LocalItem {
   }
 
   function get_photoset_photos_filename($page, $temporary = false) {
-    return $this->get_filename($this->set_id . '-photos-' . $page . '.xml', $temporary);
+    return $this->get_filename($this->set_id . '-photos-' . $page . self::suffix, $temporary);
   }
 
   function save_temporary_files() {
@@ -157,7 +159,7 @@ class LocalSet extends LocalItem {
 
 }
 
-class LocalPhoto extends LocalItem {
+class LocalMedia extends LocalItem {
 
   const metadata_suffix = '-info.xml';
   const comments_suffix = '-comments.xml';
@@ -170,6 +172,13 @@ class LocalPhoto extends LocalItem {
   const METADATA = 'metadata';
   const BINARY = 'binary';
   const COMMENTS = 'comments';
+
+  const PHOTO_TYPE = 0;
+  const VIDEO_TYPE = 1;
+  private static $TYPE_STR = array(
+    self::PHOTO_TYPE => 'photo',
+    self::VIDEO_TYPE => 'video'
+  );
 
   function __construct($photo_info, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
@@ -184,17 +193,38 @@ class LocalPhoto extends LocalItem {
     $this->dialog->info(3, "Target directory: $this->location");
 
     // Photo format
-    if (array_key_exists('originalformat', $this->photo_info)) {
-      $extension = $this->photo_info['originalformat'];
+    if (array_key_exists('video', $this->photo_info)) {
+      $this->media_type = self::VIDEO_TYPE;
+      // We don't know the extension ahead of time, so let's call it .video
+      $extension = 'video';
     } else {
-      // FIXME: assume it's JPEG; a better way to do this is to call flickr.photos.getInfo and look it up
-      $extension = 'jpg';
+      $this->media_type = self::PHOTO_TYPE;
+      if (array_key_exists('originalformat', $this->photo_info)) {
+        $extension = $this->photo_info['originalformat'];
+      } else {
+        // FIXME: assume it's JPEG; a better way to do this is to call flickr.photos.getInfo and look it up
+        $extension = 'jpg';
+      }
     }
 
     // Target filenames
-    $this->assign_data_value('binary', $this->photo_info['id'] . '.' . $extension);
-    $this->assign_data_value('metadata', $this->photo_info['id'] . self::metadata_suffix);
-    $this->assign_data_value('comments', $this->photo_info['id'] . self::comments_suffix);
+    $this->assign_data_value(self::BINARY, $this->photo_info['id'] . '.' . $extension);
+    $this->assign_data_value(self::METADATA, $this->photo_info['id'] . self::metadata_suffix);
+    $this->assign_data_value(self::COMMENTS, $this->photo_info['id'] . self::comments_suffix);
+  }
+
+  function is_video() {
+    return $this->media_type === self::VIDEO_TYPE;
+  }
+
+  function get_media_type() {
+    return self::$TYPE_STR[$this->media_type];
+  }
+
+  function set_extension($content_type) {
+    $parts = explode('/', $content_type);
+    $extension = $parts[1];
+    $this->assign_data_value(self::BINARY, $this->photo_info['id'] . '.' . $extension);
   }
 
   static function check_backup_dir($dir, &$present, $dialog, &$files = 0, $depth = 1) {
@@ -204,11 +234,12 @@ class LocalPhoto extends LocalItem {
       $objects = scandir($dir); 
       foreach ($objects as $object) { 
         if ($object != "." && $object != ".." && ($depth > 1 || $object != LocalSet::target_dir)) { 
-          if (filetype($dir."/".$object) == "dir") {
-            LocalPhoto::check_backup_dir($dir."/".$object, $present, $dialog, $files, $depth + 1);
+          $fullpath = $dir."/".$object;
+          if (filetype($fullpath) == "dir") {
+            LocalMedia::check_backup_dir($dir."/".$object, $present, $dialog, $files, $depth + 1);
           } else {
             // Check for binary
-            if (preg_match('/^(\d+)\./', $object, $matches)) {
+            if (preg_match('/^(\d+)\./', $object, $matches) && filesize($fullpath) > 0) {
               $dialog->progress(++$files);
               $present[(string)$matches[1]] |= self::BINARY_FLAG;
               next;
@@ -239,7 +270,7 @@ class LocalPhoto extends LocalItem {
 
   static function backup_list($local_storage) {
     $present = array();
-    LocalPhoto::check_backup_dir($local_storage->directory, $present, $local_storage->dialog);
+    LocalMedia::check_backup_dir($local_storage->directory, $present, $local_storage->dialog);
     return $present;
   }
 
@@ -275,8 +306,8 @@ class LocalStorage {
     $this->photo_directory($photo_info);
   }
 
-  function local_photo_factory($photo_info) {
-    return new LocalPhoto($photo_info, $this, $this->dialog);
+  function local_media_factory($photo_info) {
+    return new LocalMedia($photo_info, $this, $this->dialog);
   }
 
   function local_set_factory($set_id) {
@@ -290,10 +321,10 @@ class LocalStorage {
   function does_photo_seem_backed_up($photo_id) {
     if ($this->photos_backed_up === false) {
       $this->dialog->info(1, "Parsing local photo backup");
-      $this->photos_backed_up = LocalPhoto::backup_list($this);
+      $this->photos_backed_up = LocalMedia::backup_list($this);
     }
 
-    return LocalPhoto::does_photo_seem_backed_up($this->photos_backed_up, $photo_id);
+    return LocalMedia::does_photo_seem_backed_up($this->photos_backed_up, $photo_id);
   }
 
 }

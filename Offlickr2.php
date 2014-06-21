@@ -107,16 +107,16 @@ class Offlickr2 {
         $this->backup_all_photos = true;
         break;
       case 'B':
-        $this->force_backup |= LocalPhoto::BINARY_FLAG;;
+        $this->force_backup |= LocalMedia::BINARY_FLAG;;
         break;
       case 'M':
-        $this->force_backup |= LocalPhoto::METADATA_FLAG;;
+        $this->force_backup |= LocalMedia::METADATA_FLAG;;
         break;
       case 'C':
-        $this->force_backup |= LocalPhoto::COMMENTS_FLAG;;
+        $this->force_backup |= LocalMedia::COMMENTS_FLAG;;
         break;
       case 'A':
-        $this->force_backup |= LocalPhoto::ALL_FLAGS;;
+        $this->force_backup |= LocalMedia::ALL_FLAGS;;
         break;
       case 'p':
         if(is_array($options[$opt])) {
@@ -203,7 +203,7 @@ class Offlickr2 {
 
   private function backup_photo($photo_id) {
     // Check if photo is already backed up
-    $local_photo = false;
+    $local_media = false;
 
     if ($this->force_backup == 0) {
 
@@ -212,8 +212,8 @@ class Offlickr2 {
         $this->dialog->info(1, "Getting photo info");
         $photo_info = $this->phpflickr->photos_getInfo($photo_id);
 
-        $local_photo = $this->local_storage->local_photo_factory($photo_info);
-        if ($local_photo->is_backed_up()) {
+        $local_media = $this->local_storage->local_media_factory($photo_info);
+        if ($local_media->is_backed_up()) {
           $already_backed_up = true;
         }
       } else {
@@ -233,23 +233,31 @@ class Offlickr2 {
     // If we got here, then we do need to back the photo up
     $this->dialog->info(1, "Processing photo $photo_id");
 
-    if ($local_photo == false) {
+    if ($local_media == false) {
       $this->dialog->info(1, "Getting photo info");
       $photo_info = $this->phpflickr->photos_getInfo($photo_id);
-      $local_photo = $this->local_storage->local_photo_factory($photo_info);
+      $local_media = $this->local_storage->local_media_factory($photo_info);
     }
 
-    $local_photo->setup_temporary_dir();
+    $local_media->setup_temporary_dir();
 
     $backed_up = 0;
 
     // Binary
-    if ($this->force_backup & LocalPhoto::BINARY_FLAG || ! $local_photo->has_data(LocalPhoto::BINARY)) {
+    if ($this->force_backup & LocalMedia::BINARY_FLAG || ! $local_media->has_data(LocalMedia::BINARY)) {
       $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
       $source_url = false;
       $max_size = 0;
+      // Find the right source URL
+      $media = $local_media->get_media_type();
       foreach(array_reverse($photo_size) as $size) {
-        if ($size['label'] = 'Original') {
+        if ($size['media'] != $media) {
+          $this->dialog->info(3, "Skipping " . $size['label'] . ": wrong media (" . $size['media'] . ")");
+          continue;
+        }
+        $this->dialog->info(3, "Found " . $size['label'] . " for " . $size['media'] . " media");
+        if (in_array($size['label'], array('Original', 'Video Original'))) {
+          // We found the original
           $source_url =  $size['source'];
           break;
         }
@@ -264,11 +272,12 @@ class Offlickr2 {
         $this->dialog->dump_var(4, "Flickr response", $this->phpflickr->parsed_response);
         return false;
       }
-      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename(LocalPhoto::BINARY, true));
+      $this->dialog->info(2, "Downloading " . $media . " binary to " . $local_media->get_data_filename(LocalMedia::BINARY, true));
       $this->dialog->info(2, "Binary source is " . $source_url);
-      $fp = fopen($local_photo->get_data_filename(LocalPhoto::BINARY, true), "w");
+      $fp = fopen($local_media->get_data_filename(LocalMedia::BINARY, true), "w");
       curl_setopt($this->curl, CURLOPT_URL, $source_url);
       curl_setopt($this->curl, CURLOPT_FILE, $fp);
+      curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, true);
       if ($this->dialog->show_progress()) {
         curl_setopt($this->curl, CURLOPT_NOPROGRESS, false);
       }
@@ -277,26 +286,37 @@ class Offlickr2 {
         return false;
       }
       fclose($fp);
+      if ($local_media->is_video()) {
+        // Now that we have the video, find out about the extension
+        $current_filename = $local_media->get_data_filename(LocalMedia::BINARY, true);
+        $http_media_type = curl_getinfo($this->curl, CURLINFO_CONTENT_TYPE);
+        $local_media->set_extension($http_media_type);
+        $new_filename = $local_media->get_data_filename(LocalMedia::BINARY, true);
+        $this->dialog->info(2, "Renaming " . $current_filename . " into " . $new_filename);
+        if (!rename($current_filename, $new_filename)) {
+          return false;
+        }
+      }
     }
 
     // Metadata
-    if ($this->force_backup & LocalPhoto::METADATA_FLAG || ! $local_photo->has_data(LocalPhoto::METADATA)) {
+    if ($this->force_backup & LocalMedia::METADATA_FLAG || ! $local_media->has_data(LocalMedia::METADATA)) {
       if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename(LocalPhoto::METADATA, true))) {
+                                  $local_media->get_data_filename(LocalMedia::METADATA, true))) {
         return false;
       }
     }
 
     // Comments
-    if ($this->force_backup & LocalPhoto::COMMENTS_FLAG || ! $local_photo->has_data(LocalPhoto::COMMENTS)) {
+    if ($this->force_backup & LocalMedia::COMMENTS_FLAG || ! $local_media->has_data(LocalMedia::COMMENTS)) {
       if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename(LocalPhoto::COMMENTS, true))) {
+                                  $local_media->get_data_filename(LocalMedia::COMMENTS, true))) {
         return false;
       }
     }
 
     // Move to the right place
-    $local_photo->save_temporary_files();
+    $local_media->save_temporary_files();
     return true;
 
   }
