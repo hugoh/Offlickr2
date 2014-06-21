@@ -128,6 +128,8 @@ class LocalSet extends LocalItem {
   const target_dir = "sets";
   protected $total_pages = 0;
 
+  const INFO = 'info';
+
   function __construct($set_id, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);
     $this->location = $local_storage->relative(self::target_dir);
@@ -164,6 +166,10 @@ class LocalPhoto extends LocalItem {
   const METADATA_FLAG = 2;
   const COMMENTS_FLAG = 4;
   const ALL_FLAGS = 7;
+
+  const METADATA = 'metadata';
+  const BINARY = 'binary';
+  const COMMENTS = 'comments';
 
   function __construct($photo_info, $local_storage, $dialog) {
     parent::__construct($local_storage, $dialog);

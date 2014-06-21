@@ -244,7 +244,7 @@ class Offlickr2 {
     $backed_up = 0;
 
     // Binary
-    if ($this->force_backup & LocalPhoto::BINARY_FLAG || ! $local_photo->has_data('binary')) {
+    if ($this->force_backup & LocalPhoto::BINARY_FLAG || ! $local_photo->has_data(LocalPhoto::BINARY)) {
       $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
       $source_url = false;
       $max_size = 0;
@@ -264,9 +264,9 @@ class Offlickr2 {
         $this->dialog->dump_var(4, "Flickr response", $this->phpflickr->parsed_response);
         return false;
       }
-      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename('binary', true));
+      $this->dialog->info(2, "Downloading binary to " . $local_photo->get_data_filename(LocalPhoto::BINARY, true));
       $this->dialog->info(2, "Binary source is " . $source_url);
-      $fp = fopen($local_photo->get_data_filename('binary', true), "w");
+      $fp = fopen($local_photo->get_data_filename(LocalPhoto::BINARY, true), "w");
       curl_setopt($this->curl, CURLOPT_URL, $source_url);
       curl_setopt($this->curl, CURLOPT_FILE, $fp);
       if ($this->dialog->show_progress()) {
@@ -280,17 +280,17 @@ class Offlickr2 {
     }
 
     // Metadata
-    if ($this->force_backup & LocalPhoto::METADATA_FLAG || ! $local_photo->has_data('metadata')) {
+    if ($this->force_backup & LocalPhoto::METADATA_FLAG || ! $local_photo->has_data(LocalPhoto::METADATA)) {
       if (! $this->get_flickr_xml("flickr.photos.getInfo", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename('metadata', true))) {
+                                  $local_photo->get_data_filename(LocalPhoto::METADATA, true))) {
         return false;
       }
     }
 
     // Comments
-    if ($this->force_backup & LocalPhoto::COMMENTS_FLAG || ! $local_photo->has_data('comments')) {
+    if ($this->force_backup & LocalPhoto::COMMENTS_FLAG || ! $local_photo->has_data(LocalPhoto::COMMENTS)) {
       if (! $this->get_flickr_xml("flickr.photos.comments.getList", array("photo_id"=>$photo_id),
-                                  $local_photo->get_data_filename('comments', true))) {
+                                  $local_photo->get_data_filename(LocalPhoto::COMMENTS, true))) {
         return false;
       }
     }
@@ -313,7 +313,7 @@ class Offlickr2 {
 
     // Metadata
     if (! $this->get_flickr_xml("flickr.photosets.getInfo", array("photoset_id"=>$set_id),
-                                $local_set->get_data_filename('info', true))) {
+                                $local_set->get_data_filename(LocalSet::INFO, true))) {
       return false;
     }
 
