@@ -212,6 +212,11 @@ class Offlickr2 {
         $this->dialog->info(1, "Getting photo info");
         $photo_info = $this->phpflickr->photos_getInfo($photo_id);
 
+        if (!$photo_info) {
+          $this->dialog->error("Could not retrieve photo info for $photo_id");
+          return false;
+        }
+
         $local_media = $this->local_storage->local_media_factory($photo_info);
         if ($local_media->is_backed_up()) {
           $already_backed_up = true;
