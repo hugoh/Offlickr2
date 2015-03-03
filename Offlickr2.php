@@ -27,6 +27,7 @@ class Offlickr2 {
   private $flickr_username = false;
   private $target_directory = false;
   private $backup_all_photos = false;
+  private $backup_photos_limit = 0;
   private $force_backup = 0;
   private $local_checks = false;
   private $photo_list = array();
@@ -62,6 +63,7 @@ class Offlickr2 {
             $this->define_option('d', ':', 'Target directory'),
             $this->define_option('P', '', 'Backup photos'),
             $this->define_option('p', ':', 'Specific photo to backup'),
+            $this->define_option('l', ':', 'Limit of photos to backup'),
             $this->define_option('B', '', 'Force backup of photo binary (photo or video)'),
             $this->define_option('M', '', 'Force backup of photo metadata'),
             $this->define_option('C', '', 'Force backup of photo comments'),
@@ -105,6 +107,9 @@ class Offlickr2 {
         break;
       case 'P':
         $this->backup_all_photos = true;
+        break;
+      case 'l':
+        $this->backup_photos_limit = $options[$opt];
         break;
       case 'B':
         $this->force_backup |= LocalMedia::BINARY_FLAG;;
@@ -379,7 +384,7 @@ class Offlickr2 {
    */
 
   private function get_photo_list() {
-    $this->dialog->info(0, "Getting photo list");
+    $this->dialog->info(0, "Getting photo list" . ($this->backup_photos_limit > 0 ? ' (' . $this->backup_photos_limit .' max)' : ''));
     $page = 1;
     while(true) {
       $this->dialog->info(2, "Setting photos list page $page");
@@ -392,7 +397,11 @@ class Offlickr2 {
       foreach ($photos['photo'] as $photo) {
         array_push($this->photo_list, $photo['id']);
       }
-      $this->dialog->info(2, "Total so far: " . count($this->photo_list) . " photo(s)");
+      $retrieved = count($this->photo_list);
+      $this->dialog->info(2, "Total so far: " . $retrieved . " photo(s)");
+      if ($this->backup_photos_limit > 0 && $retrieved >= $this->backup_photos_limit) {
+        break;
+      }
       $page += 1;
     }
     $this->dialog->info(0, "Found: " . count($this->photo_list) . " photo(s)");
@@ -403,6 +412,9 @@ class Offlickr2 {
    */
 
   private function backup_photos() {
+    if ($this->backup_photos_limit > 0) {
+      array_splice($this->photo_list, $this->backup_photos_limit);
+    }
     return $this->backup_items($this->photo_list, "photo", "backup_photo");
   }
 
