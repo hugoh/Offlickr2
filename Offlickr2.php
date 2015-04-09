@@ -466,7 +466,7 @@ class Offlickr2 {
     $frob = $get_frob['frob'];
     $perms = 'read';
     $api_sig = md5($this->secret . "api_key" . $this->appid . "frob" . $frob . "perms" . $perms);
-    $url = sprintf('http://flickr.com/services/auth/?api_key=%s&perms=%s&frob=%s&api_sig=%s',
+    $url = sprintf('https://flickr.com/services/auth/?api_key=%s&perms=%s&frob=%s&api_sig=%s',
                    $this->appid, $perms, $frob, $api_sig);
     $this->dialog->info(0, "Visit the following URL:\n\n$url\n\nPress enter when finished");
     $sh = fopen("php://stdin","r");
