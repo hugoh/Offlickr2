@@ -1,6 +1,6 @@
 <?php
 
-require_once('./phpflickr/phpFlickr.php');
+require_once('./oPhpFlickr.php');
 require_once('./Dialog.php');
 require_once('./LocalStorage.php');
 require_once('./version.php');
@@ -490,7 +490,7 @@ class Offlickr2 {
 
   private function go() {
 
-    $this->phpflickr = new phpFlickr($this->appid, $this->secret, true);
+    $this->phpflickr = new oPhpFlickr($this->appid, $this->secret, true);
 
     // Check for Flickr username
     if ($this->flickr_username != false) { 

@@ -1,3 +1,6 @@
 [submodule "phpflickr"]
 	path = phpflickr
 	url = https://github.com/dan-coulter/phpflickr.git
+[submodule "scribe-php"]
+	path = scribe-php
+	url = https://github.com/gmaurol/scribe-php.git
