@@ -2,6 +2,10 @@
 
 Offlickr2 is a command line program to backup Flickr accounts.
 
+# Changelog
+
+See [ChangeLog.md](ChangeLog.md).
+
 # Installation
 
 Run:
@@ -17,8 +21,3 @@ See the help information with:
 ```
 php ./Offlickr2.php -h
 ```
-
-# FAQ
-
-- Why PHP?
-   - Because PHP is commonly available on Web hosting environments.
