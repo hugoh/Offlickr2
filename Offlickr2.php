@@ -1,4 +1,4 @@
-<?php
+  `<?php
 
 require_once('./oPhpFlickr.php');
 require_once('./Dialog.php');
@@ -523,7 +523,9 @@ class Offlickr2 {
 
     // Create phpFlickr object
     $ini_array = parse_ini_file($this->configuration_file, true);
-    if (!is_array($ini_array) || !is_array($ini_array[$this->flickr_id])) {
+    if (!is_array($ini_array) || !is_array($ini_array[$this->flickr_id])
+        || !$ini_array[$this->flickr_id][CONFIG_ACCESS_TOKEN]
+        || !$ini_array[$this->flickr_id][CONFIG_ACCESS_TOKEN_SECRET]) {
         $this->dialog->info(1, "No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
         $token = $this->authorize();
     } else {
