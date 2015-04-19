@@ -9,6 +9,8 @@ define('FLICKR_APPID', 'c538ec60d29c939f35461ef134d6d579');
 define('FLICKR_SECRET', '84c560c121f79fdd');
 define("FLICKR_MAX_PER_PAGE", 500);
 define('DEFAULT_AUTH_FILE', getenv("HOME") . '/.offlickr2.auth.ini');
+define('CONFIG_ACCESS_TOKEN', 'access_token');
+define('CONFIG_ACCESS_TOKEN_SECRET', 'access_token_secret');
 
 class Offlickr2 {
 
@@ -80,7 +82,7 @@ class Offlickr2 {
 
     $options = getopt($short);
     if (!is_array($options)) { 
-      $this->error('Problem parsing options');
+      $this->dialog->error('Problem parsing options');
       exit(1); 
     }
 
@@ -456,32 +458,46 @@ class Offlickr2 {
   }
 
   /**
+   * Configuration
+   */
+  
+  private function save_auth_header($config_handle) {
+    fputs($config_handle,
+      sprintf("\n[%s]\n", $this->flickr_id));
+  }
+
+  private function save_auth_data($config_handle, $property, $value) {
+    fputs($config_handle,
+      sprintf("%s = %s\n", $property, $value));
+  }
+  
+  /**
    * Flickr authorization
    */
-
-  private function authorize() {
-    $this->dialog->info(0, "\nYou need to authorize Offlickr2 to access your Flickr account");
-    $this->dialog->info(1, "Getting a frob");
-    $get_frob = $this->phpflickr->clean_text_nodes(unserialize($this->phpflickr->request("flickr.auth.getFrob", array())));
-    $frob = $get_frob['frob'];
-    $perms = 'read';
-    $api_sig = md5($this->secret . "api_key" . $this->appid . "frob" . $frob . "perms" . $perms);
-    $url = sprintf('https://flickr.com/services/auth/?api_key=%s&perms=%s&frob=%s&api_sig=%s',
-                   $this->appid, $perms, $frob, $api_sig);
-    $this->dialog->info(0, "Visit the following URL:\n\n$url\n\nPress enter when finished");
-    $sh = fopen("php://stdin","r");
-    fgets($sh);
-    $this->dialog->info(1, "Getting the token");
-    $token = $this->phpflickr->auth_getToken($frob);
-    $this->dialog->info(1, "Writing the token to $this->configuration_file");
+  
+  private function save_access_token($token) {
+    $this->dialog->info(1, "Saving the access token to $this->configuration_file");
     $ah = fopen($this->configuration_file, "a");
     if ($ah === FALSE) {
       $this->dialog->error("Cannot write to configuration file");
       exit(1);
     }
-    fputs($ah, sprintf("\n[%s]\ntoken = %s\n", $token['user']['nsid'], $token['token']));
+    $ah = fopen($this->configuration_file, "a");
+    if ($ah === FALSE) {
+      $this->dialog->error("Cannot write to configuration file");
+      exit(1);
+    }
+    $this->save_auth_header($ah);
+    $this->save_auth_data($ah, CONFIG_ACCESS_TOKEN, $token->getToken());
+    $this->save_auth_data($ah, CONFIG_ACCESS_TOKEN_SECRET, $token->getSecret());
     fclose($ah);
-    return $token['token'];
+  }
+
+  private function authorize() {
+    $this->dialog->info(0, "\nYou need to authorize Offlickr2 to access your Flickr account");
+    $token = $this->phpflickr->authorize_console();
+    $this->save_access_token($token);
+    return $token;
   }
 
   /**
@@ -511,10 +527,11 @@ class Offlickr2 {
         $this->dialog->info(1, "No information about Flickr id $this->flickr_id in configuration file $this->configuration_file");
         $token = $this->authorize();
     } else {
-      $token = $ini_array[$this->flickr_id]['token'];
+      $token = new Token($ini_array[$this->flickr_id][CONFIG_ACCESS_TOKEN],
+                         $ini_array[$this->flickr_id][CONFIG_ACCESS_TOKEN_SECRET]);
     }
-    if (!$token) {
-      $this->error("No token for Flickr id $this->flickr_id in configuration file $this->configuration_file");
+    if (!$token || $token->getToken() == '' || $token->getSecret() == '') {
+      $this->dialog->error("No access token for Flickr id $this->flickr_id in configuration file $this->configuration_file: " . $token->__toString());
         exit(1); 
     }
     $this->phpflickr->setToken($token);
