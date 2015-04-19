@@ -57,7 +57,7 @@ class oPhpFlickr extends phpFlickr {
 			$this->error_code = false;
 			$this->error_msg = false;
 		}
-		return $this->response;
+		return $response;
 	}
 
 }
