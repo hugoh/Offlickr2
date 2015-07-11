@@ -18,6 +18,8 @@ abstract class LocalItem {
   }
 
   function setup_temporary_dir() {
+    $path="/tmp";
+    $prefix="offlickr2.";
     // FIXME: Not atomic
     $tempname = tempnam($path,$prefix);
     if (!$tempname) {
