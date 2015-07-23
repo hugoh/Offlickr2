@@ -1,6 +1,6 @@
 <?php
 
-require_once('Dialog.php');
+require_once(__DIR__.'/Dialog.php');
 
 abstract class LocalItem {
 
@@ -101,18 +101,18 @@ abstract class LocalItem {
     $this->dialog->info(2, "Files moved to $this->location");
   }
 
-  private function rrmdir($dir) { 
-    if (is_dir($dir)) { 
-      $objects = scandir($dir); 
-      foreach ($objects as $object) { 
-        if ($object != "." && $object != "..") { 
+  private function rrmdir($dir) {
+    if (is_dir($dir)) {
+      $objects = scandir($dir);
+      foreach ($objects as $object) {
+        if ($object != "." && $object != "..") {
           if (filetype($dir."/".$object) == "dir") $this->rrmdir($dir."/".$object); else unlink($dir."/".$object);
-        } 
-      } 
-      reset($objects); 
-      rmdir($dir); 
-    } 
-  } 
+        }
+      }
+      reset($objects);
+      rmdir($dir);
+    }
+  }
 
   function __destruct() {
     if ($this->temporary_dir != false) {
@@ -231,9 +231,9 @@ class LocalMedia extends LocalItem {
     // This assumes that the backup directory is in the right format
 
     if (is_dir($dir)) {
-      $objects = scandir($dir); 
-      foreach ($objects as $object) { 
-        if ($object != "." && $object != ".." && ($depth > 1 || $object != LocalSet::target_dir)) { 
+      $objects = scandir($dir);
+      foreach ($objects as $object) {
+        if ($object != "." && $object != ".." && ($depth > 1 || $object != LocalSet::target_dir)) {
           $fullpath = $dir."/".$object;
           if (filetype($fullpath) == "dir") {
             LocalMedia::check_backup_dir($dir."/".$object, $present, $dialog, $files, $depth + 1);
@@ -257,13 +257,13 @@ class LocalMedia extends LocalItem {
               next;
             }
           }
-        } 
-      } 
+        }
+      }
 
       if ($depth == 1) {
         $dialog->progress_done(' files scanned');
       }
-    } 
+    }
 
     return $present;
   }

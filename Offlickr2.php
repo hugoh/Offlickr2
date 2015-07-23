@@ -1,9 +1,9 @@
 <?php
 
-require_once('./oPhpFlickr.php');
-require_once('./Dialog.php');
-require_once('./LocalStorage.php');
-require_once('./version.php');
+require_once(__DIR__.'/oPhpFlickr.php');
+require_once(__DIR__.'/Dialog.php');
+require_once(__DIR__.'/LocalStorage.php');
+require_once(__DIR__.'/version.php');
 
 define('FLICKR_APPID', 'c538ec60d29c939f35461ef134d6d579');
 define('FLICKR_SECRET', '84c560c121f79fdd');
@@ -61,7 +61,7 @@ class Offlickr2 {
             $this->define_option('h', '', 'Display this message'),
             $this->define_option('c', ':', 'Configuration file (default: '.$this->configuration_file.')'),
             $this->define_option('i', ':', 'Flickr ID'),
-            $this->define_option('I', ':', 'Flickr username'),            
+            $this->define_option('I', ':', 'Flickr username'),
             $this->define_option('d', ':', 'Target directory'),
             $this->define_option('P', '', 'Backup photos'),
             $this->define_option('p', ':', 'Specific photo to backup'),
@@ -81,9 +81,9 @@ class Offlickr2 {
     }
 
     $options = getopt($short);
-    if (!is_array($options)) { 
+    if (!is_array($options)) {
       $this->dialog->error('Problem parsing options');
-      exit(1); 
+      exit(1);
     }
 
     foreach (array_keys($options) as $opt)
@@ -142,7 +142,7 @@ class Offlickr2 {
           $this->set_list = array($options[$opt]);
         }
         break;
-        
+
       case 'h':
         $this->help();
         exit(0);
@@ -257,7 +257,7 @@ class Offlickr2 {
 
     // Binary
     if ($this->force_backup & LocalMedia::BINARY_FLAG || ! $local_media->has_data(LocalMedia::BINARY)) {
-      $photo_size = $this->phpflickr->photos_getSizes($photo_id); 
+      $photo_size = $this->phpflickr->photos_getSizes($photo_id);
       $source_url = false;
       $max_size = 0;
       // Find the right source URL
@@ -360,7 +360,7 @@ class Offlickr2 {
                                   $local_set->get_photoset_photos_filename($page, true))) {
         return false;
       }
-      
+
     }
 
     // Move to the right place
@@ -460,7 +460,7 @@ class Offlickr2 {
   /**
    * Configuration
    */
-  
+
   private function save_auth_header($config_handle) {
     fputs($config_handle,
       sprintf("\n[%s]\n", $this->flickr_id));
@@ -470,11 +470,11 @@ class Offlickr2 {
     fputs($config_handle,
       sprintf("%s = %s\n", $property, $value));
   }
-  
+
   /**
    * Flickr authorization
    */
-  
+
   private function save_access_token($token) {
     $this->dialog->info(1, "Saving the access token to $this->configuration_file");
     $ah = fopen($this->configuration_file, "a");
@@ -509,16 +509,16 @@ class Offlickr2 {
     $this->phpflickr = new oPhpFlickr($this->appid, $this->secret, true);
 
     // Check for Flickr username
-    if ($this->flickr_username != false) { 
+    if ($this->flickr_username != false) {
       $this->dialog->info(1, "Looking for Flickr id for username $this->flickr_username");
       $r = $this->phpflickr->people_findByUsername($this->flickr_username);
       $this->flickr_id = $r['nsid'];
-    }    
+    }
 
     // Check for Flickr ID
-    if (!$this->flickr_id) { 
+    if (!$this->flickr_id) {
       $this->dialog->error("Missing Flickr ID");
-      exit(1); 
+      exit(1);
     }
 
     // Create phpFlickr object
@@ -534,7 +534,7 @@ class Offlickr2 {
     }
     if (!$token || $token->getToken() == '' || $token->getSecret() == '') {
       $this->dialog->error("No access token for Flickr id $this->flickr_id in configuration file $this->configuration_file: " . $token->__toString());
-        exit(1); 
+        exit(1);
     }
     $this->phpflickr->setToken($token);
 

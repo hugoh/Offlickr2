@@ -1,5 +1,8 @@
 # Offlickr2 changelog
 
+## Version 1.5.1
+- Fixed require paths
+
 ## Version 1.5
 - Added OAuth support
 

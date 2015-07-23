@@ -1,9 +1,9 @@
 <?php
 
-require_once('./phpflickr/phpFlickr.php');
-require_once('./scribe-php/src/test/bootstrap.php');
+require_once(__DIR__.'/phpflickr/phpFlickr.php');
+require_once(__DIR__.'/scribe-php/src/test/bootstrap.php');
 
-class oPhpFlickr extends phpFlickr {	
+class oPhpFlickr extends phpFlickr {
 
 	function __construct($api_key, $secret = NULL, $die_on_error = false) {
 		parent::__construct($api_key, $secret, $die_on_error);
@@ -29,7 +29,7 @@ class oPhpFlickr extends phpFlickr {
 
 	function request ($command, $args = array()) {
 		// NOTE: cache not implemented
-		
+
 		$args = array_merge(
 			array("url" => $this->rest_endpoint,
 				  "method" => $command,

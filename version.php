@@ -1,5 +1,5 @@
 <?php
 
-define("OFFLICKR2_VERSION", "1.5 - April 19, 2015");
+define("OFFLICKR2_VERSION", "1.5.1 - July 23, 2015");
 
 ?>
