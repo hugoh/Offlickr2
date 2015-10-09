@@ -374,9 +374,18 @@ class Offlickr2 {
 
   private function get_set_list() {
     $this->dialog->info(0, "Getting set list");
-    $sets = $this->phpflickr->photosets_getList();
-    foreach ($sets['photoset'] as $set) {
-      array_push($this->set_list, $set['id']);
+    $page = 1;
+    $done = false;
+    while(! $done) {
+      $sets = $this->phpflickr->photosets_getList('', $page, FLICKR_MAX_PER_PAGE, '');
+      foreach ($sets['photoset'] as $set) {
+        array_push($this->set_list, $set['id']);
+      }
+      if ($sets['pages'] != $page) {
+        $page++;
+      } else {
+        $done = true;
+      }
     }
     $this->dialog->info(0, "Found: " . count($this->set_list) . " set(s)");
   }

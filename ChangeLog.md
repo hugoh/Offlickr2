@@ -1,5 +1,8 @@
 # Offlickr2 changelog
 
+## Version 1.5.2
+- Fixed backup of sets
+
 ## Version 1.5.1
 - Fixed require paths
 
