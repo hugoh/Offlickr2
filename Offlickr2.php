@@ -413,6 +413,10 @@ class Offlickr2 {
         $this->dialog->info(3, "Stopping");
         break;
       }
+      if ($page > $photos['pages']) {
+        printf ("debug: past the end of pages? $page > %s\n", $photos['pages']);
+        break;
+      }
       foreach ($photos['photo'] as $photo) {
         array_push($this->photo_list, $photo['id']);
       }
