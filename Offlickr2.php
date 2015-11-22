@@ -414,7 +414,8 @@ class Offlickr2 {
         break;
       }
       if ($page > $photos['pages']) {
-        printf ("debug: past the end of pages? $page > %s\n", $photos['pages']);
+        # https://github.com/hugoh/Offlickr2/pull/8
+        $this->dialog->info(3, "past the end of pages? $page > " . $photos['pages']);
         break;
       }
       foreach ($photos['photo'] as $photo) {

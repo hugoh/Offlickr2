@@ -3,6 +3,7 @@
 ## Version 1.5.3
 - Added -v 3 & -v 4 for additional output when backing up photos
 - Added -n for dry-run
+- Fix for endless loop (@spacelama; https://github.com/hugoh/Offlickr2/pull/8)
 
 ## Version 1.5.2
 - Fixed backup of sets
