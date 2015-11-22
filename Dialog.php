@@ -13,6 +13,10 @@ class Dialog {
     $this->debug_level = $level;
   }
 
+  function get_debug_level() {
+    return $this->debug_level;
+  }
+
   function show_progress() {
     return self::DIALOG_SHOW_PROGRESS_LEVEL <= $this->debug_level;
   }

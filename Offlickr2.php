@@ -25,6 +25,7 @@ class Offlickr2 {
 
   // Settings
   private $debug_level = 0;
+  private $dry_run = false;
   private $flickr_id = false;
   private $flickr_username = false;
   private $target_directory = false;
@@ -73,6 +74,7 @@ class Offlickr2 {
             $this->define_option('S', '', 'Backup sets'),
             $this->define_option('s', ':', 'Specific set to backup'),
             $this->define_option('q', '', 'Quick (local) check to evaluate state'),
+            $this->define_option('n', '', 'Dry-run; do not write anything to disk'),
             $this->define_option('v', ':', "Verbosity level; default: $this->debug_level"),
             );
     $short = '';
@@ -91,6 +93,9 @@ class Offlickr2 {
       case 'v':
         $this->debug_level = $options[$opt];
         $this->dialog->set_debug_level($this->debug_level);
+        break;
+      case 'n':
+        $this->dry_run = true;
         break;
       case 'c':
         $this->configuration_file = $options[$opt];
@@ -402,7 +407,10 @@ class Offlickr2 {
       $photos = $this->phpflickr->photos_search(array("user_id"=>$this->flickr_id,
                                                       "page"=>$page,
                                                       "per_page"=>FLICKR_MAX_PER_PAGE));
+      $found = count($photos['photo']);
+      $this->dialog->info(3, "Found $found photos");
       if (count($photos['photo']) == 0) {
+        $this->dialog->info(3, "Stopping");
         break;
       }
       foreach ($photos['photo'] as $photo) {
@@ -410,12 +418,20 @@ class Offlickr2 {
       }
       $retrieved = count($this->photo_list);
       $this->dialog->info(2, "Total so far: " . $retrieved . " photo(s)");
+      if ($this->dialog->get_debug_level() >= 4) {
+          $start = ($page - 1) * FLICKR_MAX_PER_PAGE;
+          $this->dialog->info(4, 'Retrieved in this batch: ' . join(', ', array_slice($this->photo_list, $start)));
+      }
       if ($this->backup_photos_limit > 0 && $retrieved >= $this->backup_photos_limit) {
-        break;
+          if ($retrieved > $this->backup_photos_limit) {
+              $this->dialog->info(3, "Shrinking list down to $this->backup_photos_limit");
+              $this->photo_list = array_slice($this->photo_list, 0, $this->backup_photos_limit, TRUE);
+          }
+          break;
       }
       $page += 1;
     }
-    $this->dialog->info(0, "Found: " . count($this->photo_list) . " photo(s)");
+    $this->dialog->info(0, "Found: " . count($this->photo_list) . " photo(s) to back up");
   }
 
   /**
@@ -551,11 +567,19 @@ class Offlickr2 {
     if ($this->backup_all_photos) {
       $this->get_photo_list();
     }
-    $this->backup_photos();
+    if (! $this->dry_run) {
+        $this->backup_photos();
+    } else {
+        $this->dialog->info(1, "Dry-run: skipping photo backup");
+    }
     if ($this->backup_all_sets) {
       $this->get_set_list();
     }
-    $this->backup_sets();
+    if (! $this->dry_run) {
+        $this->backup_sets();
+    } else {
+        $this->dialog->info(1, "Dry-run: skipping set backup");
+    }
   }
 
   /**
