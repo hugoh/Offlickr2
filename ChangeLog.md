@@ -1,5 +1,8 @@
 # Offlickr2 changelog
 
+## Version 1.5.3
+- Silenced a PHP 7.0 warning
+
 ## Version 1.5.2
 - Fixed backup of sets
 

@@ -27,7 +27,7 @@ class oPhpFlickr extends phpFlickr {
 		return $accessToken;
 	}
 
-	function request ($command, $args = array()) {
+	function request ($command, $args = array(), $nocache = false) {
 		// NOTE: cache not implemented
 
 		$args = array_merge(
