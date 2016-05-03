@@ -405,6 +405,10 @@ class Offlickr2 {
       if (count($photos['photo']) == 0) {
         break;
       }
+      if ($page > $photos['pages']) {
+        printf ("debug: past the end of pages? $page > %s\n", $photos['pages']);
+        break;
+      }
       foreach ($photos['photo'] as $photo) {
         array_push($this->photo_list, $photo['id']);
       }
