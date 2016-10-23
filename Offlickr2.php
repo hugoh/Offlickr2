@@ -25,10 +25,12 @@ class Offlickr2 {
 
   // Settings
   private $debug_level = 0;
+  private $dry_run = false;
   private $flickr_id = false;
   private $flickr_username = false;
   private $target_directory = false;
   private $backup_all_photos = false;
+  private $backup_all_sets = false;
   private $backup_photos_limit = 0;
   private $force_backup = 0;
   private $local_checks = false;
@@ -59,6 +61,7 @@ class Offlickr2 {
     $this->optdef =
       array(
             $this->define_option('h', '', 'Display this message'),
+            $this->define_option('n', '', 'Dry-run; do not save anything'),
             $this->define_option('c', ':', 'Configuration file (default: '.$this->configuration_file.')'),
             $this->define_option('i', ':', 'Flickr ID'),
             $this->define_option('I', ':', 'Flickr username'),
@@ -94,6 +97,9 @@ class Offlickr2 {
         break;
       case 'c':
         $this->configuration_file = $options[$opt];
+        break;
+      case 'n':
+        $this->dry_run = true;
         break;
       case 'q':
         $this->local_checks = true;
@@ -242,6 +248,12 @@ class Offlickr2 {
       $this->dialog->info(3, "Forcing download (" . $this->force_backup . ")");
     }
 
+    // Dry run?
+    if ($this->dry_run) {
+      // Return
+      return true;
+    }
+
     // If we got here, then we do need to back the photo up
     $this->dialog->info(1, "Processing photo $photo_id");
 
@@ -339,6 +351,12 @@ class Offlickr2 {
 
   private function backup_set($set_id) {
     $this->dialog->info(1, "Processing set $set_id");
+
+    // Dry run?
+    if ($this->dry_run) {
+      // Return
+      return true;
+    }
 
     $local_set = $this->local_storage->local_set_factory($set_id);
     $local_set->setup_temporary_dir();

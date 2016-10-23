@@ -227,6 +227,15 @@ class LocalMedia extends LocalItem {
     $this->assign_data_value(self::BINARY, $this->photo_info['id'] . '.' . $extension);
   }
 
+  static function get_present_index(&$present, $photoid) {
+      $photo_index = "p" . $photoid;
+      if (!array_key_exists($photo_index, $present)) {
+        // Make sure the associative array entry is initialized
+        $present[$photo_index] = 0;
+      }
+      return $photo_index;
+  }
+
   static function check_backup_dir($dir, &$present, $dialog, &$files = 0, $depth = 1) {
     // This assumes that the backup directory is in the right format
 
@@ -241,20 +250,23 @@ class LocalMedia extends LocalItem {
             // Check for binary
             if (preg_match('/^(\d+)\./', $object, $matches) && filesize($fullpath) > 0) {
               $dialog->progress(++$files);
-              $present[(string)$matches[1]] |= self::BINARY_FLAG;
-              next;
+              $photo_index = LocalMedia::get_present_index($present, $matches[1]);
+              $present[$photo_index] |= self::BINARY_FLAG;
+              continue;
             }
             // Check for metadata
             if (preg_match('/^(\d+)' . self::metadata_suffix . '/', $object, $matches)) {
               $dialog->progress(++$files);
-              $present[(string)$matches[1]] |= self::METADATA_FLAG;
-              next;
+              $photo_index = LocalMedia::get_present_index($present, $matches[1]);
+              $present[$photo_index] |= self::METADATA_FLAG;
+              continue;
             }
             // Check for comments
             if (preg_match('/^(\d+)' . self::comments_suffix . '/', $object, $matches)) {
               $dialog->progress(++$files);
-              $present[(string)$matches[1]] |= self::COMMENTS_FLAG;
-              next;
+              $photo_index = LocalMedia::get_present_index($present, $matches[1]);
+              $present[$photo_index] |= self::COMMENTS_FLAG;
+              continue;
             }
           }
         }
@@ -275,7 +287,8 @@ class LocalMedia extends LocalItem {
   }
 
   static function does_photo_seem_backed_up($present, $photo_id) {
-    return $present[$photo_id] == self::ALL_FLAGS;
+    $photo_index = LocalMedia::get_present_index($present, $photo_id);
+    return $present[$photo_index] == self::ALL_FLAGS;
   }
 
 }
