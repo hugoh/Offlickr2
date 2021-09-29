@@ -46,22 +46,7 @@ class oPhpFlickr extends phpFlickr {
         $response_object = $request->send();
         $response = $response_object->getBody();
 
-//		print("*** response: " . $response . "\n");
-
-//        if ($args['format'] == 'rest') {
-        // FIXME: when format = rest, get returned:
-
-//xml version="1.0" encoding="utf-8"
-//<rsp stat="ok">
-//<photo id="51507327660"
-        // should work out to to interpret this rsp stat="ok"/"fail"
-
-//            $xml = simplexml_load_string($response);
-//            print("*** xml: " . $xml);
-//            $this->parsed_response = json_decode($xml, TRUE);
-//        } else {
-            $this->parsed_response = json_decode($response, TRUE);
-//        }
+        $this->parsed_response = json_decode($response, TRUE);
 		if ($this->parsed_response['stat'] == 'fail') {
 			if ($this->die_on_error) {
                 if ($already_tried > 3) {
