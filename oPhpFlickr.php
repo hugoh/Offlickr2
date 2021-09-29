@@ -27,7 +27,7 @@ class oPhpFlickr extends phpFlickr {
 		return $accessToken;
 	}
 
-	function request ($command, $args = array()) {
+	function request ($command, $args = array(), $already_tried=0) {
 		// NOTE: cache not implemented
 		
 		$args = array_merge(
@@ -40,15 +40,41 @@ class oPhpFlickr extends phpFlickr {
         $request = new OAuthRequest(Verb::POST, $args['url']);
         foreach ($args as $key => $value) {
             $request->addBodyParameter($key, $value);
+            print("*** request[" . $key . "]=" . $value . "\n");
         }
         $this->oauth_service->signRequest($this->token, $request);
         $response_object = $request->send();
         $response = $response_object->getBody();
 
-		$this->parsed_response = json_decode($response, TRUE);
+//		print("*** response: " . $response . "\n");
+
+//        if ($args['format'] == 'rest') {
+        // FIXME: when format = rest, get returned:
+
+//xml version="1.0" encoding="utf-8"
+//<rsp stat="ok">
+//<photo id="51507327660"
+        // should work out to to interpret this rsp stat="ok"/"fail"
+
+//            $xml = simplexml_load_string($response);
+//            print("*** xml: " . $xml);
+//            $this->parsed_response = json_decode($xml, TRUE);
+//        } else {
+            $this->parsed_response = json_decode($response, TRUE);
+//        }
 		if ($this->parsed_response['stat'] == 'fail') {
-			if ($this->die_on_error) die("The Flickr API returned the following error: #{$this->parsed_response['code']} - {$this->parsed_response['message']}");
-			else {
+			if ($this->die_on_error) {
+                if ($already_tried > 3) {
+                    die("The Flickr API returned the following error: #{$this->parsed_response['code']} - {$this->parsed_response['message']}");
+                } else {
+                    print("warning: (retry {$already_tried}<=3) The Flickr API returned the following error: #{$this->parsed_response['code']} - {$this->parsed_response['message']}\n");
+                    $sleep = 1 * 10**$already_tried;
+                    print("Sleeping {$sleep} seconds\n");
+                    sleep($sleep);
+                    $already_tried++;
+                    $this->request($command, $args, $already_tried);
+                }
+			} else {
 				$this->error_code = $this->parsed_response['code'];
 				$this->error_msg = $this->parsed_response['message'];
 				$this->parsed_response = false;

@@ -397,11 +397,12 @@ class Offlickr2 {
         break;
       }
       if ($page > $photos['pages']) {
-        printf ("debug: past the end of pages? $page > %s\n", $photos['pages']);
+        printf ("DEBUG: past the end of pages? $page > %s\n", $photos['pages']);
         break;
       }
       foreach ($photos['photo'] as $photo) {
         array_push($this->photo_list, $photo['id']);
+        printf ("DEBUG: %s %d\n", $photo['id'], $page);
       }
       $retrieved = count($this->photo_list);
       $this->dialog->info(2, "Total so far: " . $retrieved . " photo(s)");
